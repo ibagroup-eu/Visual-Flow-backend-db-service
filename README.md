@@ -33,6 +33,14 @@ Visual Flow application is divided into the following repositories:
 - _**Visual-Flow-backend-db-service**_ (current)
 - [Visual-Flow-backend-history-service](https://github.com/ibagroup-eu/Visual-Flow-backend-history-service)
 
+## Visual Flow Backend DB Service
+
+Visual Flow Backend DB Service is the REST API app, which allows to interact with the databases listed 
+above using the following operations:
+- Ping connection.
+
+To interact with the microservice, you should use corresponding endpoints in 
+[the main microservice](https://github.com/ibagomel/Visual-Flow-backend).
 ## Contribution
 
 [Check the official guide](./CONTRIBUTING.md).
