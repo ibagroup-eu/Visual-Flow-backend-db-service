@@ -16,31 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package by.iba.vfdbapi;
+package by.iba.vfdbapi.utils;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import lombok.experimental.UtilityClass;
+
+import java.util.Locale;
 
 /**
- * Main application class.
+ * Utility class, designed to handle database driver errors.
  */
-@SpringBootApplication(exclude = {
-        DataSourceAutoConfiguration.class,
-        MongoAutoConfiguration.class,
-        MongoDataAutoConfiguration.class
-})
-public class VfDBApiApplication {
+@UtilityClass
+public class ErrorMessageUtil {
 
     /**
-     * Main method, runs application.
+     * Method for handling DB driver's error messages.
+     * Finds the closest semantically error message by keywords and sends it instead of the driver message.
      *
-     * @param args command-line args.
+     * @param errorMessage is a driver error message.
+     * @return the closest semantically error message.
      */
-    public static void main(String[] args) {
-        SpringApplication.run(VfDBApiApplication.class, args);
+    public static String handleConnectError(String errorMessage) {
+        for (ErrorKeyWord category : ErrorKeyWord.values()) {
+            for (String key : category.getKeyWords()) {
+                if (errorMessage.toLowerCase(Locale.getDefault()).contains(key)) {
+                    return category.getMessage();
+                }
+            }
+        }
+        return ErrorKeyWord.DEFAULT.getMessage();
     }
-
 }

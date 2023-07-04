@@ -22,9 +22,11 @@ import by.iba.vfdbapi.dto.PingStatusDTO;
 import by.iba.vfdbapi.dto.dbs.JDBCConnectionDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
+
+import static by.iba.vfdbapi.utils.ErrorMessageUtil.handleConnectError;
 
 /**
  * Class containing common logic for all databases for which
@@ -36,15 +38,19 @@ public class JDBCConnector {
 
     /**
      * DAO method for checking the connection to the JDBC database.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(JDBCConnectionDTO dto) {
-        try(Connection con = DriverManager.getConnection(dto.getJdbcUrl(), dto.getUser(), dto.getPassword())) {
+        try (Connection con = DriverManager.getConnection(dto.getJdbcUrl(), dto.getUser(), dto.getPassword())) {
             return PingStatusDTO.builder().status(con.isValid(500)).build();
-        } catch (SQLException e) {
-            LOGGER.error(e.getMessage());
-            return PingStatusDTO.builder().status(false).build();
+        } catch (Exception e) {
+            LOGGER.error("An error has been occurred during connecting to {}: {}", dto.getStorage(), e.getMessage());
+            return PingStatusDTO.builder()
+                    .status(false)
+                    .message(handleConnectError(e.getMessage()))
+                    .build();
         }
     }
 

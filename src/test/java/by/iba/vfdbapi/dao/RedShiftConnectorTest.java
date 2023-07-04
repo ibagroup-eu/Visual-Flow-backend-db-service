@@ -4,6 +4,7 @@ import by.iba.vfdbapi.dto.PingStatusDTO;
 import by.iba.vfdbapi.dto.dbs.RedshiftConnectionDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ibm.cloud.objectstorage.SdkClientException;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,8 +54,8 @@ class RedShiftConnectorTest {
 
         @Cleanup MockedStatic<DriverManager> manager = mockStatic(DriverManager.class);
         manager.when(() -> DriverManager.getConnection("jdbc:redshift:iam://my.host.rs:1111/", properties))
-                .thenThrow(SQLException.class);
+                .thenThrow(new SdkClientException("Cannot connect"));
         PingStatusDTO actual = connector.ping(dto);
-        assertFalse(actual.isStatus(), "Ping() should return false, because of SQLException!");
+        assertFalse(actual.isStatus(), "Ping() should return false, because of SdkClientException!");
     }
 }

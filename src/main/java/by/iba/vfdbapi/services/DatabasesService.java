@@ -37,6 +37,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class DatabasesService {
 
+    private static final String DATASOURCE_INCORRECT_ERROR = "Oops! The data source cannot be determined. " +
+            "Check that it is specified correctly.";
+    private static final String CONFIG_INCORRECT_ERROR = "Oops! It is not possible to determine full configuration of " +
+            "the data source. Make sure that all the necessary data for connection is specified.";
+    private static final String DATASOURCE_UNDEFINED_ERROR = "Oops! The data source is not specified.";
     private final JDBCConnector jdbc;
     private final MongoConnector mongo;
     private final ElasticConnector elastic;
@@ -48,12 +53,13 @@ public class DatabasesService {
 
     /**
      * Method for checking the connection to the database. Determinate connection DTO type.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(ConnectDto dto) {
         JsonNode value = dto.getValue();
-        if(value.hasNonNull("storage")) {
+        if (value.hasNonNull("storage")) {
             Storages storage = Storages.findStorage(value.get("storage").asText());
             ObjectMapper mapper = new ObjectMapper();
             try {
@@ -92,14 +98,23 @@ public class DatabasesService {
                     case S3:
                         return s3.ping(mapper.treeToValue(dto.getValue(), AmazonS3DTO.class));
                     default:
-                        return PingStatusDTO.builder().status(false).build();
+                        return PingStatusDTO.builder()
+                                .status(false)
+                                .message(DATASOURCE_INCORRECT_ERROR)
+                                .build();
                 }
             } catch (JsonProcessingException e) {
                 LOGGER.error("Database configuration has not been found: ", e);
-                return PingStatusDTO.builder().status(false).build();
+                return PingStatusDTO.builder()
+                        .status(false)
+                        .message(CONFIG_INCORRECT_ERROR)
+                        .build();
             }
         }
         LOGGER.error("Storage type should not be null!");
-        return PingStatusDTO.builder().status(false).build();
+        return PingStatusDTO.builder()
+                .status(false)
+                .message(DATASOURCE_UNDEFINED_ERROR)
+                .build();
     }
 }

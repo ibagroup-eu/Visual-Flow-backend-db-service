@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.stereotype.Repository;
 
+import static by.iba.vfdbapi.utils.ErrorMessageUtil.handleConnectError;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -38,6 +39,7 @@ public class MongoConnector {
 
     /**
      * Secondary method to establish a connection to the Mongo database and receive it.
+     *
      * @param dto an object containing data to connect to the database.
      * @return database connection object.
      */
@@ -49,9 +51,9 @@ public class MongoConnector {
                     builder.connectTimeout(3, SECONDS);
                     builder.readTimeout(3, SECONDS);
                 })
-                .applyToClusterSettings( builder -> builder.serverSelectionTimeout(3, SECONDS))
+                .applyToClusterSettings(builder -> builder.serverSelectionTimeout(3, SECONDS))
                 .applyConnectionString(connectionString);
-        if(dto.getUser() != null && dto.getPassword() != null) {
+        if (dto.getUser() != null && dto.getPassword() != null) {
             mongoClientSettings.credential(MongoCredential.createCredential(
                     dto.getUser(), dto.getDatabase(), dto.getPassword().toCharArray()));
         }
@@ -60,19 +62,23 @@ public class MongoConnector {
 
     /**
      * DAO method for checking the connection to the Mongo database.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(MongoConnectionDTO dto) {
-        try(MongoClient client = connect(dto)) {
+        try (MongoClient client = connect(dto)) {
             return PingStatusDTO.builder().status(
                     client
                             .getDatabase(dto.getDatabase())
                             .runCommand(new Document("ping", 1))
                             .containsKey("ok")).build();
-        } catch (MongoTimeoutException | MongoSocketOpenException e) {
+        } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
-            return PingStatusDTO.builder().status(false).build();
+            return PingStatusDTO.builder()
+                    .status(false)
+                    .message(handleConnectError(e.getMessage()))
+                    .build();
         }
     }
 }

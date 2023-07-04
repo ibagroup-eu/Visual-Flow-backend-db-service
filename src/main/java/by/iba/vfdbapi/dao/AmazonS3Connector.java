@@ -22,7 +22,6 @@ import by.iba.vfdbapi.dto.PingStatusDTO;
 import by.iba.vfdbapi.dto.dbs.AmazonS3DTO;
 import com.ibm.cloud.objectstorage.ClientConfiguration;
 import com.ibm.cloud.objectstorage.Protocol;
-import com.ibm.cloud.objectstorage.SdkClientException;
 import com.ibm.cloud.objectstorage.auth.AWSCredentials;
 import com.ibm.cloud.objectstorage.auth.AWSStaticCredentialsProvider;
 import com.ibm.cloud.objectstorage.auth.AnonymousAWSCredentials;
@@ -33,6 +32,8 @@ import com.ibm.cloud.objectstorage.services.s3.AmazonS3ClientBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
+import static by.iba.vfdbapi.utils.ErrorMessageUtil.handleConnectError;
+
 /**
  * Repository-class for interaction with AmazonS3.
  */
@@ -42,6 +43,7 @@ public class AmazonS3Connector {
 
     /**
      * Secondary method to establish a connection to the AmazonS3 database and receive it.
+     *
      * @param dto an object containing data to connect to the database.
      * @return database connection object.
      */
@@ -68,15 +70,19 @@ public class AmazonS3Connector {
 
     /**
      * DAO method for checking the connection to the AmazonS3 database.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(AmazonS3DTO dto) {
         try {
             return PingStatusDTO.builder().status(!connect(dto).listBuckets().isEmpty()).build();
-        } catch (SdkClientException e) {
+        } catch (Exception e) {
             LOGGER.error("An error has been occurred during connecting to AWS S3: {}", e.getMessage());
-            return PingStatusDTO.builder().status(false).build();
+            return PingStatusDTO.builder()
+                    .status(false)
+                    .message(handleConnectError(e.getMessage()))
+                    .build();
         }
     }
 }

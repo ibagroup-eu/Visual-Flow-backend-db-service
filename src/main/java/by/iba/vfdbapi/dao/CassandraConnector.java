@@ -24,17 +24,13 @@ import by.iba.vfdbapi.dto.dbs.CassandraConnectionDTO;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.JdkSSLOptions;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
+
+import static by.iba.vfdbapi.utils.ErrorMessageUtil.handleConnectError;
 
 /**
  * Repository-class for interaction with Cassandra.
@@ -45,6 +41,7 @@ public class CassandraConnector {
 
     /**
      * Secondary method to establish a connection to the Cassandra database and receive it.
+     *
      * @param dto an object containing data to connect to the database.
      * @return database connection object.
      */
@@ -54,14 +51,13 @@ public class CassandraConnector {
                 .withPort(dto.getPort())
                 .withClusterName(dto.getCluster())
                 .withCredentials(dto.getUsername(), dto.getPassword());
-        if(Boolean.TRUE.equals(dto.getSsl())) {
+        if (Boolean.TRUE.equals(dto.getSsl())) {
             try {
                 KeyStore trustStore = CertCommon.loadTrustStoreFromCert(dto.getCertData());
                 return builder.withSSL(JdkSSLOptions.builder().withSSLContext(new SSLContextBuilder()
                         .loadTrustMaterial(trustStore, null)
                         .build()).build()).build();
-            } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException |
-                     CertificateException | IOException e) {
+            } catch (Exception e) {
                 LOGGER.error("Could not establish Cassandra connection: {}", e.getMessage());
             }
         }
@@ -70,16 +66,20 @@ public class CassandraConnector {
 
     /**
      * DAO method for checking the connection to the Cassandra database.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(CassandraConnectionDTO dto) {
         Cluster cluster = connect(dto);
-        try(Session session = cluster.connect()) {
+        try (Session session = cluster.connect()) {
             return PingStatusDTO.builder().status(!session.isClosed()).build();
-        } catch (NoHostAvailableException e) {
+        } catch (Exception e) {
             LOGGER.error("Could not establish Cassandra connection: {}", e.getMessage());
-            return PingStatusDTO.builder().status(false).build();
+            return PingStatusDTO.builder()
+                    .status(false)
+                    .message(handleConnectError(e.getMessage()))
+                    .build();
         }
     }
 }

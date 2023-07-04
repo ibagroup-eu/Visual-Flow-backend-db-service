@@ -102,7 +102,7 @@ class COSConnectorTest {
         AmazonS3ClientBuilder builder = mock(AmazonS3ClientBuilder.class, new AWSBuilderAnswer());
         @Cleanup MockedStatic<AmazonS3ClientBuilder> staticBuilder = mockStatic(AmazonS3ClientBuilder.class);
         staticBuilder.when(AmazonS3ClientBuilder::standard).thenReturn(builder);
-        when(builder.build()).thenThrow(SdkClientException.class);
+        when(builder.build()).thenThrow(new SdkClientException("Unable to connect to S3"));
         PingStatusDTO actual = connector.ping(dto);
         assertFalse(actual.isStatus(), "Ping() should return false, because SdkClientException has been thrown!");
         verify(builder, times(1)).build();

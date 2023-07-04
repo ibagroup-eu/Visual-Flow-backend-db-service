@@ -22,7 +22,6 @@ import by.iba.vfdbapi.dto.PingStatusDTO;
 import by.iba.vfdbapi.dto.dbs.CosConnectionDTO;
 import com.ibm.cloud.objectstorage.ClientConfiguration;
 import com.ibm.cloud.objectstorage.Protocol;
-import com.ibm.cloud.objectstorage.SdkClientException;
 import com.ibm.cloud.objectstorage.auth.AWSCredentials;
 import com.ibm.cloud.objectstorage.auth.AWSStaticCredentialsProvider;
 import com.ibm.cloud.objectstorage.auth.BasicAWSCredentials;
@@ -33,6 +32,8 @@ import com.ibm.cloud.objectstorage.services.s3.AmazonS3;
 import com.ibm.cloud.objectstorage.services.s3.AmazonS3ClientBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
+
+import static by.iba.vfdbapi.utils.ErrorMessageUtil.handleConnectError;
 
 /**
  * Repository-class for interaction with IBM COS.
@@ -47,6 +48,7 @@ public class COSConnector {
      * Secondary method to establish a connection to the COS database and receive it.
      * Uses 2 COS auth types: {@link #HMAC_AUTH HMAC} and IAM, depending on
      * {@link CosConnectionDTO#getAuthType() authType value}.
+     *
      * @param dto an object containing data to connect to the database.
      * @return database connection object.
      */
@@ -77,15 +79,19 @@ public class COSConnector {
 
     /**
      * DAO method for checking the connection to the IBM COS database.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(CosConnectionDTO dto) {
         try {
             return PingStatusDTO.builder().status(!connect(dto).listBuckets().isEmpty()).build();
-        } catch (SdkClientException e) {
+        } catch (Exception e) {
             LOGGER.error("An error has been occurred during connecting to COS: {}", e.getMessage());
-            return PingStatusDTO.builder().status(false).build();
+            return PingStatusDTO.builder()
+                    .status(false)
+                    .message(handleConnectError(e.getMessage()))
+                    .build();
         }
     }
 }

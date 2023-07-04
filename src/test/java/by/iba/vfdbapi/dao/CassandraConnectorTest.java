@@ -35,7 +35,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.InetSocketAddress;
 import java.security.cert.CertificateException;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
@@ -74,7 +76,8 @@ class CassandraConnectorTest {
         certCommon.when(() -> CertCommon.loadTrustStoreFromCert(dto.getCertData())).thenThrow(CertificateException.class);
         Session session = mock(Session.class);
         when(clusterObj.connect()).thenReturn(session);
-        when(session.isClosed()).thenThrow(NoHostAvailableException.class);
+        when(session.isClosed()).thenThrow(new NoHostAvailableException(Map.of(InetSocketAddress.createUnresolved("host", 1994),
+                new Exception("Unable to connect"))));
         PingStatusDTO actual = connector.ping(dto);
         assertFalse(actual.isStatus(), "Ping() should return false, because NoHostAvailableException has been thrown!");
         verify(clusterObj).connect();

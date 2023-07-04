@@ -28,12 +28,15 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
+import static by.iba.vfdbapi.utils.ErrorMessageUtil.handleConnectError;
+
 @Slf4j
 @Repository
 public class RedShiftConnector {
 
     /**
      * Secondary method to establish a connection to the RedShift database and receive it.
+     *
      * @param dto an object containing data to connect to the database.
      * @return database connection object.
      */
@@ -44,7 +47,7 @@ public class RedShiftConnector {
         properties.setProperty("password", dto.getPassword());
         properties.setProperty("ssl", dto.getSsl().toString());
         properties.setProperty("connectTimeout", "2");
-        if(!dto.getAccessKey().isEmpty() && !dto.getSecretKey().isEmpty() && Boolean.TRUE.equals(dto.getSsl())) {
+        if (!dto.getAccessKey().isEmpty() && !dto.getSecretKey().isEmpty() && Boolean.TRUE.equals(dto.getSsl())) {
             host.append(":iam");
             properties.setProperty("AccessKeyID", dto.getAccessKey());
             properties.setProperty("SecretAccessKey", dto.getSecretKey());
@@ -55,15 +58,19 @@ public class RedShiftConnector {
 
     /**
      * DAO method for checking the connection to the RedShift database.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(RedshiftConnectionDTO dto) {
-        try(Connection connection = connect(dto)) {
+        try (Connection connection = connect(dto)) {
             return PingStatusDTO.builder().status(connection.isValid(500)).build();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error(e.getMessage());
-            return PingStatusDTO.builder().status(false).build();
+            return PingStatusDTO.builder()
+                    .status(false)
+                    .message(handleConnectError(e.getMessage()))
+                    .build();
         }
     }
 }

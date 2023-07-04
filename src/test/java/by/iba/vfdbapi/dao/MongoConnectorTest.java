@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoSocketOpenException;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import lombok.Cleanup;
@@ -70,7 +71,8 @@ class MongoConnectorTest {
         @Cleanup MockedStatic<MongoClients> mongoClients = mockStatic(MongoClients.class);
         MongoClient mongoClient = mock(MongoClient.class);
         mongoClients.when(() -> MongoClients.create(mongoClientSettings)).thenReturn(mongoClient);
-        when(mongoClient.getDatabase(dto.getDatabase())).thenThrow(MongoSocketOpenException.class);
+        when(mongoClient.getDatabase(dto.getDatabase())).thenThrow(new MongoSocketOpenException("Unable to get DB",
+                new ServerAddress()));
         PingStatusDTO actual = connector.ping(dto);
         assertFalse(actual.isStatus(), "Ping() should return false, because of MongoSocketOpenException!");
     }

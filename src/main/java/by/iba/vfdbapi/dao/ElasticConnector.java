@@ -35,14 +35,12 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Repository;
+
 import javax.net.ssl.SSLContext;
-import java.io.IOException;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.Objects;
+
+import static by.iba.vfdbapi.utils.ErrorMessageUtil.handleConnectError;
 
 /**
  * Repository-class for interaction with ElasticSearch.
@@ -53,17 +51,18 @@ public class ElasticConnector {
 
     /**
      * Secondary method to establish a connection to the ES database and receive it.
+     *
      * @param dto an object containing data to connect to the database.
      * @return database connection object.
      */
     private RestHighLevelClient connect(ElasticConnectionDTO dto) {
         final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        if(dto.getUser() != null && dto.getPassword() != null) {
+        if (dto.getUser() != null && dto.getPassword() != null) {
             credentialsProvider.setCredentials(AuthScope.ANY,
                     new UsernamePasswordCredentials(dto.getUser(), dto.getPassword()));
         }
         RestClientBuilder builder;
-        if(Boolean.TRUE.equals(dto.getSsl())) {
+        if (Boolean.TRUE.equals(dto.getSsl())) {
             try {
                 KeyStore trustStore = CertCommon.loadTrustStoreFromCert(dto.getCertData());
                 SSLContext sslContext = SSLContexts.custom()
@@ -72,10 +71,9 @@ public class ElasticConnector {
                         .setHttpClientConfigCallback(httpAsyncClientBuilder -> httpAsyncClientBuilder
                                 .setDefaultCredentialsProvider(credentialsProvider)
                                 .setSSLContext(sslContext));
-            } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException |
-                     IOException | CertificateException | IllegalArgumentException e) {
+            } catch (Exception e) {
                 LOGGER.error("Could not establish ES connection: {}", e.getMessage());
-                return null;
+                throw new IllegalArgumentException(e.getMessage());
             }
         } else {
             SSLFactory sslFactory = SSLFactory.builder()
@@ -94,16 +92,20 @@ public class ElasticConnector {
 
     /**
      * DAO method for checking the connection to the ElasticSearch database.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(ElasticConnectionDTO dto) {
-        try(RestHighLevelClient elasticsearchClient = connect(dto)) {
+        try (RestHighLevelClient elasticsearchClient = connect(dto)) {
             return PingStatusDTO.builder().status(
                     Objects.requireNonNull(elasticsearchClient).ping(RequestOptions.DEFAULT)).build();
-        } catch (IOException | NullPointerException e) {
+        } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
-            return PingStatusDTO.builder().status(false).build();
+            return PingStatusDTO.builder()
+                    .status(false)
+                    .message(handleConnectError(e.getMessage()))
+                    .build();
         }
     }
 }

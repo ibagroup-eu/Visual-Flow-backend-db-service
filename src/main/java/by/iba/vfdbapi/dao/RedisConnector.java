@@ -24,7 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.stereotype.Repository;
-import org.springframework.data.redis.RedisConnectionFailureException;
+
+import static by.iba.vfdbapi.utils.ErrorMessageUtil.handleConnectError;
 
 /**
  * Repository-class for interaction with Redis.
@@ -35,6 +36,7 @@ public class RedisConnector {
 
     /**
      * Secondary method to establish a connection to the Redis database and receive it.
+     *
      * @param dto an object containing data to connect to the database.
      * @return database connection object.
      */
@@ -50,15 +52,19 @@ public class RedisConnector {
 
     /**
      * DAO method for checking the connection to the Redis database.
+     *
      * @param dto an object containing data to connect to the database.
      * @return true, if a connection to the database has been established, otherwise - false.
      */
     public PingStatusDTO ping(RedisConnectionDTO dto) {
         try {
             return PingStatusDTO.builder().status(!connect(dto).getConnection().isClosed()).build();
-        } catch (RedisConnectionFailureException e) {
+        } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
-            return PingStatusDTO.builder().status(false).build();
+            return PingStatusDTO.builder()
+                    .status(false)
+                    .message(handleConnectError(e.getCause().getCause().getMessage()))
+                    .build();
         }
     }
 }

@@ -32,4 +32,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PingStatusDTO {
     private boolean status;
+    private String message;
 }
