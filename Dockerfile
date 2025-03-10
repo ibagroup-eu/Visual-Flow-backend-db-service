@@ -24,4 +24,4 @@ RUN yum update -y && yum clean all && rm -rf /var/cache/yum
 
 WORKDIR /app/
 
-ENTRYPOINT ["/bin/sh", "-c", "java -Xms1g -Xmx8g -jar vf-db-api.jar --spring.config.location=file:/config/application.yaml"]
+ENTRYPOINT ["/bin/sh", "-c", "java -Xms1g -Xmx8g -Djdk.serialFilter='!*' -jar vf-db-api.jar --spring.config.location=file:/config/application.yaml"]

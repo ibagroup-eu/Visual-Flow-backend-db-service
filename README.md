@@ -1,6 +1,6 @@
 # About Visual Flow
 
-Visual Flow is an ETL tool designed for effective data manipulation via convenient and user-friendly interface. The tool has the following capabilities:
+Visual Flow is an ETL/ELT tool designed for effective data management via convenient and user-friendly interface. The tool has the following capabilities:
 
 - Can integrate data from heterogeneous sources:
   - AWS S3
